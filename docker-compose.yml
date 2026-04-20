@@ -1,0 +1,10 @@
+services:
+  web-server:
+    image: nginx:latest
+    ports:
+      - published: 8080
+        target: 80
+        protocol: tcp
+    environment:
+      NODE_ENV: production
+      DEBUG: false

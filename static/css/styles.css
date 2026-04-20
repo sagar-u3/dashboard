@@ -1,0 +1,511 @@
+/* Dashboard Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    height: 100vh;
+    background-color: #0d1117;
+    color: #c9d1d9;
+    overflow: hidden;
+}
+
+.dashboard {
+    display: flex;
+    height: 100vh;
+}
+
+/* Sidebar Styles */
+.sidebar {
+    width: 250px;
+    background-color: #161b22;
+    border-right: 1px solid #30363d;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header {
+    padding: 20px;
+    border-bottom: 1px solid #30363d;
+}
+
+.sidebar-header h1 {
+    color: #58a6ff;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.nav-menu {
+    flex: 1;
+    padding: 10px 0;
+}
+
+.nav-item {
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border-left: 3px solid transparent;
+}
+
+.nav-item:hover {
+    background-color: #21262d;
+}
+
+.nav-item.active {
+    background-color: #0d2f45;
+    border-left-color: #58a6ff;
+}
+
+.nav-item span {
+    margin-right: 8px;
+}
+
+/* Main Content Styles */
+.main-content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.content-header {
+    margin-bottom: 20px;
+}
+
+.content-header h1 {
+    color: #c9d1d9;
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+.content-section {
+    display: none;
+}
+
+.content-section.active {
+    display: block;
+}
+
+/* Button Styles */
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-primary {
+    background-color: #238636;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #2ea043;
+}
+
+.btn-secondary {
+    background-color: #6e7681;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #8b949e;
+}
+
+.btn-success {
+    background-color: #238636;
+    color: white;
+}
+
+.btn-danger {
+    background-color: #da3633;
+    color: white;
+}
+
+.btn-warning {
+    background-color: #d29922;
+    color: white;
+}
+
+.btn-info {
+    background-color: #0969da;
+    color: white;
+}
+
+.btn-sm {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+/* Form Styles */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: #f0f6fc;
+}
+
+.form-control {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    background-color: #0d1117;
+    color: #c9d1d9;
+    font-size: 14px;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #58a6ff;
+    box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.2);
+}
+
+/* Command Section Styles */
+.command-input-wrapper {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.command-input {
+    flex: 1;
+}
+
+.timeout-input {
+    width: 80px;
+}
+
+.output-section {
+    background-color: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 15px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.command-info {
+    color: #58a6ff;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    margin-bottom: 10px;
+}
+
+.success {
+    color: #3fb950;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    white-space: pre-wrap;
+}
+
+.error {
+    color: #f85149;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+}
+
+/* Terminal Session Styles */
+.terminal-mode {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+}
+
+.session-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: center;
+}
+
+.status-text {
+    font-size: 12px;
+    color: #8b949e;
+}
+
+.compose-path {
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    color: #58a6ff;
+    font-size: 14px;
+    margin-right: 10px;
+}
+
+.terminal-output {
+    background-color: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 10px;
+    height: 400px;
+    overflow-y: auto;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.terminal-input-line {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+    background-color: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 10px;
+}
+
+.terminal-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #c9d1d9;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 14px;
+    outline: none;
+}
+
+.terminal-output-line {
+    margin-bottom: 2px;
+    word-wrap: break-word;
+}
+
+.terminal-command {
+    color: #58a6ff;
+}
+
+.terminal-result {
+    color: #c9d1d9;
+}
+
+.terminal-error {
+    color: #f85149;
+}
+
+.terminal-system {
+    color: #7ee787;
+}
+
+/* Docker Control Panel Styles */
+.docker-controls {
+    background-color: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.control-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.add-service-form {
+    background-color: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.add-service-form h3 {
+    color: #58a6ff;
+    margin-bottom: 15px;
+}
+
+.add-service-form small {
+    color: #8b949e;
+    font-size: 12px;
+    display: block;
+    margin-top: 5px;
+}
+
+.port-entry, .env-entry {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+    align-items: center;
+}
+
+.port-entry input, .env-entry input, .port-entry select {
+    background-color: #0d1117;
+    border: 1px solid #30363d;
+    color: #c9d1d9;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.port-entry input:focus, .env-entry input:focus, .port-entry select:focus {
+    outline: none;
+    border-color: #58a6ff;
+    box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.1);
+}
+
+.port-entry .port-published, .port-entry .port-target {
+    width: 100px;
+    min-width: 100px;
+}
+
+.port-entry .port-protocol {
+    width: 100px;
+    min-width: 75px;
+}
+
+.env-entry .env-key {
+    flex: 1;
+    min-width: 150px;
+}
+
+.env-entry .env-value {
+    flex: 2;
+    min-width: 200px;
+}
+
+.docker-tree {
+    background-color: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 15px;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.docker-services-empty {
+    text-align: center;
+    padding: 40px;
+    color: #8b949e;
+}
+
+.empty-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+}
+
+.empty-text {
+    font-size: 16px;
+}
+
+.service-node {
+    background-color: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 10px;
+}
+
+.service-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.service-name {
+    font-weight: bold;
+    color: #58a6ff;
+}
+
+.service-status {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.status-running {
+    background-color: #238636;
+    color: white;
+}
+
+.status-stopped {
+    background-color: #da3633;
+    color: white;
+}
+
+.status-pending {
+    background-color: #d29922;
+    color: white;
+}
+
+.service-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 8px;
+}
+
+.service-controls button {
+    padding: 4px 8px;
+    font-size: 11px;
+    border-radius: 3px;
+    min-width: 50px;
+}
+
+/* Placeholder Sections */
+.placeholder-section {
+    text-align: center;
+    padding: 40px;
+    background-color: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    margin-bottom: 20px;
+}
+
+.placeholder-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+}
+
+.placeholder-text {
+    color: #8b949e;
+    font-size: 16px;
+}
+
+/* Tab Styles */
+.tab-container {
+    margin-bottom: 20px;
+}
+
+.tab-buttons {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #30363d;
+}
+
+.tab-btn {
+    padding: 10px 20px;
+    background: none;
+    border: none;
+    color: #8b949e;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+.tab-btn:hover {
+    color: #c9d1d9;
+}
+
+.tab-btn.active {
+    color: #58a6ff;
+    border-bottom-color: #58a6ff;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
