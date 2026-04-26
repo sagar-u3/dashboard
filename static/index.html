@@ -18,90 +18,17 @@
             </div>
             
             <nav class="nav-menu">
-                <div class="nav-item active" onclick="showSection('command-section')">
-                    <span>&#128187;</span>
-                    Terminal
-                </div>
-                <div class="nav-item" onclick="showSection('docker-section')">
+                <div class="nav-item active" onclick="showSection('docker-section')">
                     <span>🐳</span>
                     Docker
-                </div>
-                <div class="nav-item" onclick="showSection('system-section')">
-                    <span>&#128190;</span>
-                    System
-                </div>
-                <div class="nav-item" onclick="showSection('network-section')">
-                    <span>&#128241;</span>
-                    Network
-                </div>
-                <div class="nav-item" onclick="showSection('files-section')">
-                    <span>&#128194;</span>
-                    Files
-                </div>
-                <div class="nav-item" onclick="showSection('logs-section')">
-                    <span>&#128221;</span>
-                    Logs
                 </div>
             </nav>
         </div>
         
         <!-- Main Content -->
         <div class="main-content">
-            <!-- Terminal Section -->
-            <div id="command-section" class="content-section active">
-                <div class="content-header">
-                    <h1>&#128187; Terminal</h1>
-                    <p>Execute Linux commands and interactive terminal sessions</p>
-                </div>
-                
-                <div class="tab-container">
-                    <div class="tab-buttons">
-                        <button class="tab-btn active" onclick="switchMode('single')">Single Command</button>
-                        <button class="tab-btn" onclick="switchMode('session')">Terminal Session</button>
-                    </div>
-                </div>
-                
-                <!-- Single Command Mode -->
-                <div id="single-mode" class="tab-content active">
-                    <div class="form-group">
-                        <label for="command">Command:</label>
-                        <div class="command-input-wrapper">
-                            <input type="text" id="command" class="command-input form-control" placeholder="Enter Linux command (e.g., ls -la, pwd, whoami)" />
-                            <input type="number" id="timeout" class="timeout-input form-control" value="30" title="Timeout (seconds)" />
-                        </div>
-                        <div>
-                            <button onclick="executeCommand()" id="executeBtn" class="btn btn-primary">Execute</button>
-                            <button onclick="clearOutput()" class="btn btn-secondary">Clear</button>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Output:</label>
-                        <div id="output" class="output-section"></div>
-                    </div>
-                </div>
-                
-                <!-- Terminal Session Mode -->
-                <div id="session-mode" class="tab-content">
-                    <div class="session-controls">
-                        <button onclick="startTerminalSession()" class="btn btn-primary">Start Terminal Session</button>
-                        <button onclick="endTerminalSession()" class="btn btn-secondary">End Session</button>
-                        <span id="session-status" class="status-text">Not connected</span>
-                    </div>
-                    
-                    <div class="terminal-output" id="terminal-output">
-                    </div>
-                    
-                    <!-- Command input at bottom -->
-                    <div class="terminal-input-line">
-                        <span class="prompt" id="current-prompt">user@host:~$ </span>
-                        <input type="text" id="terminal-input" class="terminal-input" placeholder="Type command here..." onkeypress="handleTerminalInput(event)" />
-                    </div>
-                </div>
-            </div>
-            
             <!-- Docker Control Panel -->
-            <div id="docker-section" class="content-section">
+            <div id="docker-section" class="content-section active">
                 <div class="content-header">
                     <h1> 🐳 Docker Control Panel</h1>
                     <p>Manage Docker containers and services</p>
@@ -177,6 +104,63 @@
                         <button type="button" onclick="addEnvEntry()" class="btn btn-secondary btn-sm">+ Add Environment Variable</button>
                     </div>
                     
+                    <!-- Volumes Section -->
+                    <div class="form-group">
+                        <label>Volume Mounts:</label>
+                        <div id="volumes-container">
+                            <div class="volume-entry">
+                                <input type="text" class="volume-source" placeholder="Source (e.g., ./data or /host/path)" />
+                                <input type="text" class="volume-target" placeholder="Target (e.g., /container/path)" />
+                                <select class="volume-type">
+                                    <option value="bind">Bind Mount</option>
+                                    <option value="volume">Named Volume</option>
+                                </select>
+                                <button type="button" onclick="removeVolumeEntry(this)" class="btn btn-danger btn-sm">×</button>
+                            </div>
+                        </div>
+                        <button type="button" onclick="addVolumeEntry()" class="btn btn-secondary btn-sm">+ Add Volume</button>
+                    </div>
+                    
+                    <!-- Networks Section -->
+                    <div class="form-group">
+                        <label>Network Configuration:</label>
+                        <div id="networks-container">
+                            <div class="network-entry">
+                                <input type="text" class="network-name" placeholder="Network Name (e.g., my-network)" />
+                                <select class="network-mode">
+                                    <option value="service">Service Network</option>
+                                    <option value="external">External Network</option>
+                                </select>
+                                <button type="button" onclick="removeNetworkEntry(this)" class="btn btn-danger btn-sm">×</button>
+                            </div>
+                        </div>
+                        <button type="button" onclick="addNetworkEntry()" class="btn btn-secondary btn-sm">+ Add Network</button>
+                    </div>
+                    
+                    <!-- Additional Options -->
+                    <div class="form-group">
+                        <label>Additional Options:</label>
+                        <div class="additional-options">
+                            <div class="option-row">
+                                <label for="restart-policy">Restart Policy:</label>
+                                <select id="restart-policy" class="form-control">
+                                    <option value="">No Restart</option>
+                                    <option value="always">Always</option>
+                                    <option value="unless-stopped">Unless Stopped</option>
+                                    <option value="on-failure">On Failure</option>
+                                </select>
+                            </div>
+                            <div class="option-row">
+                                <label for="container-name">Container Name:</label>
+                                <input type="text" id="container-name" class="form-control" placeholder="Custom container name" />
+                            </div>
+                            <div class="option-row">
+                                <label for="working-dir">Working Directory:</label>
+                                <input type="text" id="working-dir" class="form-control" placeholder="/app" />
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="form-group">
                         <button onclick="saveService()" class="btn btn-primary" id="save-button">Add Service</button>
                         <button onclick="toggleAddServiceForm()" class="btn btn-secondary">Cancel</button>
@@ -192,53 +176,21 @@
                         <div class="tree-children"></div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Placeholder Sections -->
-            <div id="system-section" class="content-section">
-                <div class="content-header">
-                    <h1>&#128190; System Information</h1>
-                    <p>System monitoring and information</p>
-                </div>
-                <div class="placeholder-section">
-                    <div class="placeholder-icon">&#128190;</div>
-                    <div class="placeholder-text">System Information feature coming soon...</div>
-                </div>
-            </div>
-            
-            <div id="network-section" class="content-section">
-                <div class="content-header">
-                    <h1>&#128241; Network Monitoring</h1>
-                    <p>Network status and monitoring</p>
-                </div>
-                <div class="placeholder-section">
-                    <div class="placeholder-icon">&#128241;</div>
-                    <div class="placeholder-text">Network Monitoring feature coming soon...</div>
+                
+                <!-- Gateway Services Section -->
+                <div class="gateway-section">
+                    <div class="content-header">
+                        <h2>🌐 Gateway Services</h2>
+                        <p>Access all services through the nginx gateway</p>
+                    </div>
+                    <div class="gateway-controls">
+                        <button onclick="refreshGatewayServices()" class="btn btn-secondary">Refresh Services</button>
+                    </div>
+                    <div class="gateway-services" id="gateway-services">
+                        <div class="service-loading">Loading gateway services...</div>
+                    </div>
                 </div>
             </div>
-            
-            <div id="files-section" class="content-section">
-                <div class="content-header">
-                    <h1>&#128194; File Manager</h1>
-                    <p>File system browser and manager</p>
-                </div>
-                <div class="placeholder-section">
-                    <div class="placeholder-icon">&#128194;</div>
-                    <div class="placeholder-text">File Manager feature coming soon...</div>
-                </div>
-            </div>
-            
-            <div id="logs-section" class="content-section">
-                <div class="content-header">
-                    <h1>&#128221; Log Viewer</h1>
-                    <p>System and application logs</p>
-                </div>
-                <div class="placeholder-section">
-                    <div class="placeholder-icon">&#128221;</div>
-                    <div class="placeholder-text">Log Viewer feature coming soon...</div>
-                </div>
-            </div>
-        </div>
     </div>
     
     <script src="/static/js/app.js"></script>

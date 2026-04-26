@@ -1,0 +1,34 @@
+name: Local Deployment
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  deploy:
+    # This MUST match the label of your self-hosted runner
+    runs-on: g50-80-server
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          # Use existing virtual environment in 'env' directory
+          source env/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Restart Application
+        run: |
+          # Stop existing process if running
+          pkill -f "python.*main.py" || true
+          # Start the application in the background using existing virtual environment
+          source env/bin/activate
+          nohup python main.py > app.log 2>&1 &

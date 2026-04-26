@@ -20,197 +20,83 @@ app = FastAPI(title="Dashboard", description="System management dashboard with c
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-class CommandRequest(BaseModel):
-    command: str
-    timeout: int = 30
-
-class CommandResponse(BaseModel):
-    output: str
-    error: str
-    return_code: int
-    command: str
-
-# Store active terminal sessions
-terminal_sessions = {}
-
-def is_command_safe(command: str) -> tuple[bool, str]:
-    """Check if command is safe to execute"""
-    # All commands are now allowed
-    return True, "Command is allowed"
-
-class TerminalSession:
-    def __init__(self, session_id: str):
-        self.session_id = session_id
-        self.process = None
-        self.cwd = os.path.expanduser("~")  # Start in user's home directory
-        
-    async def execute_command(self, command: str):
-        """Execute command in terminal session"""
-        try:
-            # Change to working directory and execute command
-            full_command = f"cd {self.cwd} && {command}"
-            
-            # For cd commands, update working directory
-            if command.strip().startswith("cd "):
-                new_dir = command.strip()[3:].strip()
-                if new_dir == "~":
-                    self.cwd = os.path.expanduser("~")
-                elif new_dir.startswith("/"):
-                    self.cwd = new_dir
-                else:
-                    self.cwd = os.path.join(self.cwd, new_dir)
-                return f"Changed directory to {self.cwd}"
-            
-            # Execute command
-            process = await asyncio.create_subprocess_shell(
-                full_command,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                shell=True
-            )
-            
-            stdout, stderr = await process.communicate()
-            
-            output = stdout.decode('utf-8', errors='replace').strip()
-            error = stderr.decode('utf-8', errors='replace').strip()
-            
-            if output:
-                return output
-            elif error:
-                return f"Error: {error}"
-            else:
-                return "Command executed successfully"
-                
-        except Exception as e:
-            return f"Error: {str(e)}"
-
-@app.websocket("/ws/terminal/{session_id}")
-async def websocket_terminal(websocket: WebSocket, session_id: str):
-    """WebSocket endpoint for terminal session"""
-    await websocket.accept()
-    
-    # Create or get terminal session
-    if session_id not in terminal_sessions:
-        terminal_sessions[session_id] = TerminalSession(session_id)
-    
-    session = terminal_sessions[session_id]
-    
-    try:
-        while True:
-            # Receive command from client
-            data = await websocket.receive_text()
-            try:
-                print(f"Received raw data: {data}")
-                command_data = json.loads(data)
-                command = command_data.get("command", "")
-                print(f"Parsed command: {command}")
-                
-                if not command:
-                    await websocket.send_text(json.dumps({
-                        "type": "error",
-                        "message": "No command received"
-                    }))
-                    continue
-                
-                if command.lower() in ["exit", "quit"]:
-                    await websocket.send_text(json.dumps({
-                        "type": "system",
-                        "message": "Terminal session ended"
-                    }))
-                    break
-                
-                # Execute command
-                result = await session.execute_command(command)
-                
-                # Send result back to client (don't echo command, frontend already shows it)
-                response_data = {
-                    "type": "output",
-                    "command": command,  # Include command in response for frontend display
-                    "result": result,
-                    "cwd": session.cwd
-                }
-                print(f"Sending response: {response_data}")
-                await websocket.send_text(json.dumps(response_data))
-                
-            except json.JSONDecodeError:
-                await websocket.send_text(json.dumps({
-                    "type": "error",
-                    "message": "Invalid JSON format"
-                }))
-            except Exception as e:
-                await websocket.send_text(json.dumps({
-                    "type": "error", 
-                    "message": str(e)
-                }))
-                
-    except WebSocketDisconnect:
-        # Clean up session
-        if session_id in terminal_sessions:
-            del terminal_sessions[session_id]
 
 @app.get("/")
 async def get_web_interface():
     """Serve the web interface"""
     return FileResponse('static/index.html')
 
-@app.post("/execute", response_model=CommandResponse)
-async def execute_command(request: CommandRequest):
-    """Execute a Linux command"""
-    command = request.command.strip()
-    
-    if not command:
-        raise HTTPException(status_code=400, detail="Command cannot be empty")
-    
-    # Security check
-    is_safe, safety_message = is_command_safe(command)
-    if not is_safe:
-        raise HTTPException(status_code=403, detail=safety_message)
-    
-    try:
-        # Execute command with timeout
-        process = await asyncio.create_subprocess_shell(
-            command,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-            shell=True
-        )
-        
-        try:
-            stdout, stderr = await asyncio.wait_for(
-                process.communicate(),
-                timeout=request.timeout
-            )
-            
-            output = stdout.decode('utf-8', errors='replace').strip()
-            error = stderr.decode('utf-8', errors='replace').strip()
-            
-            return CommandResponse(
-                output=output,
-                error=error,
-                return_code=process.returncode,
-                command=command
-            )
-            
-        except asyncio.TimeoutError:
-            # Kill the process if it times out
-            try:
-                process.kill()
-                await process.wait()
-            except:
-                pass
-            
-            raise HTTPException(
-                status_code=408,
-                detail=f"Command timed out after {request.timeout} seconds"
-            )
-            
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error executing command: {str(e)}")
-
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "service": "dashboard"}
+
+@app.get("/api/gateway/services")
+async def get_gateway_services():
+    """Get list of all services for gateway routing"""
+    try:
+        if not os.path.exists(DOCKER_COMPOSE_PATH):
+            return {"services": []}
+        
+        # Parse YAML file
+        with open(DOCKER_COMPOSE_PATH, 'r') as f:
+            compose_data = yaml.safe_load(f)
+        
+        services = []
+        if 'services' in compose_data:
+            for service_name, service_config in compose_data['services'].items():
+                service_info = {
+                    'name': service_name,
+                    'description': service_name.replace('_', ' ').title(),
+                    'path': f'/{service_name}' if service_name != 'web-server' else '/',
+                    'ports': service_config.get('ports', []),
+                    'image': service_config.get('image', ''),
+                    'build': service_config.get('build', None)
+                }
+                
+                # Add specific routing info
+                if service_name == 'web-server':
+                    service_info['path'] = '/'
+                    service_info['description'] = 'Gateway and Dashboard'
+                elif service_name == 'job_application_tracker':
+                    service_info['path'] = '/job-app'
+                    service_info['description'] = 'Job Application Tracker'
+                elif service_name == 'mongodb':
+                    service_info['path'] = '/mongo'
+                    service_info['description'] = 'MongoDB Database'
+                
+                services.append(service_info)
+        
+        return {"services": services}
+        
+    except Exception as e:
+        return {"error": f"Error getting services: {str(e)}", "services": []}
+
+@app.get("/api/gateway/routes")
+async def get_gateway_routes():
+    """Get routing configuration for nginx"""
+    try:
+        services_response = await get_gateway_services()
+        if 'error' in services_response:
+            return {"routes": []}
+        
+        routes = []
+        for service in services_response['services']:
+            if service['name'] == 'web-server':
+                continue  # Skip the gateway itself
+            
+            route_config = {
+                'service': service['name'],
+                'path': service['path'],
+                'target': f"http://{service['name']}:3000" if service['name'] == 'job_application_tracker' else f"http://{service['name']}:27017",
+                'description': service['description']
+            }
+            routes.append(route_config)
+        
+        return {"routes": routes}
+        
+    except Exception as e:
+        return {"error": f"Error getting routes: {str(e)}", "routes": []}
 
 # Docker API endpoints
 @app.get("/api/docker/compose")
@@ -343,7 +229,12 @@ async def get_service(service_name: str):
             'image': service_config.get('image', ''),
             'build': service_config.get('build', None),
             'ports': [],
-            'environment': {}
+            'environment': {},
+            'volumes': [],
+            'networks': [],
+            'restart': service_config.get('restart', ''),
+            'container_name': service_config.get('container_name', ''),
+            'working_dir': service_config.get('working_dir', '')
         }
         
         # Parse ports (keep as dict format)
@@ -377,6 +268,44 @@ async def get_service(service_name: str):
                         key, value = item.split('=', 1)
                         service_data['environment'][key.strip()] = value.strip()
         
+        # Parse volumes
+        if 'volumes' in service_config:
+            volumes = service_config['volumes']
+            if isinstance(volumes, list):
+                for volume in volumes:
+                    if isinstance(volume, str):
+                        # Parse string format like "/host/path:/container/path:rw"
+                        parts = volume.split(':')
+                        if len(parts) >= 2:
+                            volume_dict = {
+                                'source': parts[0],
+                                'target': parts[1],
+                                'type': 'bind' if '/' in parts[0] else 'volume'
+                            }
+                            if len(parts) > 2:
+                                volume_dict['read_only'] = parts[2] == 'ro'
+                            service_data['volumes'].append(volume_dict)
+                    elif isinstance(volume, dict):
+                        volume_dict = {
+                            'source': volume.get('source', ''),
+                            'target': volume.get('target', ''),
+                            'type': volume.get('type', 'bind')
+                        }
+                        service_data['volumes'].append(volume_dict)
+        
+        # Parse networks
+        if 'networks' in service_config:
+            networks = service_config['networks']
+            if isinstance(networks, list):
+                for network in networks:
+                    service_data['networks'].append({'name': network})
+            elif isinstance(networks, dict):
+                for network_name, network_config in networks.items():
+                    network_dict = {'name': network_name}
+                    if isinstance(network_config, dict):
+                        network_dict.update(network_config)
+                    service_data['networks'].append(network_dict)
+        
         return service_data
         
     except Exception as e:
@@ -391,6 +320,11 @@ async def add_service(request: dict):
         service_build = request.get('build', None)
         service_ports = request.get('ports', [])
         service_env = request.get('environment', {})
+        service_volumes = request.get('volumes', [])
+        service_networks = request.get('networks', [])
+        restart_policy = request.get('restart', '')
+        container_name = request.get('container_name', '')
+        working_dir = request.get('working_dir', '')
         
         if not service_name or (not service_image and not service_build):
             return {"success": False, "error": "Service name and either image or build context are required"}
@@ -459,6 +393,53 @@ async def add_service(request: dict):
             if env_dict:
                 new_service['environment'] = env_dict
         
+        # Add volumes if provided
+        if service_volumes and isinstance(service_volumes, list):
+            volumes_list = []
+            for volume in service_volumes:
+                if isinstance(volume, dict):
+                    source = volume.get('source', '').strip()
+                    target = volume.get('target', '').strip()
+                    volume_type = volume.get('type', 'bind')
+                    
+                    if source and target:
+                        if volume_type == 'bind':
+                            volume_str = f"{source}:{target}"
+                        else:
+                            volume_str = f"{source}:{target}"
+                        
+                        # Add read-only flag if specified
+                        if volume.get('read_only', False):
+                            volume_str += ":ro"
+                        
+                        volumes_list.append(volume_str)
+            if volumes_list:
+                new_service['volumes'] = volumes_list
+        
+        # Add networks if provided
+        if service_networks and isinstance(service_networks, list):
+            networks_dict = {}
+            for network in service_networks:
+                if isinstance(network, dict):
+                    network_name = network.get('name', '').strip()
+                    if network_name:
+                        network_config = {}
+                        if network.get('mode') == 'external':
+                            network_config['external'] = True
+                        networks_dict[network_name] = network_config if network_config else None
+            if networks_dict:
+                new_service['networks'] = networks_dict
+        
+        # Add additional options if provided
+        if restart_policy and restart_policy.strip():
+            new_service['restart'] = restart_policy.strip()
+        
+        if container_name and container_name.strip():
+            new_service['container_name'] = container_name.strip()
+        
+        if working_dir and working_dir.strip():
+            new_service['working_dir'] = working_dir.strip()
+        
         # Add the new service
         compose_data['services'][service_name] = new_service
         
@@ -479,9 +460,16 @@ async def update_service(service_name: str, request: dict):
         service_build = request.get('build', None)
         service_ports = request.get('ports', None)
         service_env = request.get('environment', None)
+        service_volumes = request.get('volumes', None)
+        service_networks = request.get('networks', None)
+        restart_policy = request.get('restart', None)
+        container_name = request.get('container_name', None)
+        working_dir = request.get('working_dir', None)
         
-        if service_image is None and service_build is None and service_ports is None and service_env is None:
-            return {"success": False, "error": "At least one of image, build, ports, or environment must be provided"}
+        if (service_image is None and service_build is None and service_ports is None and 
+            service_env is None and service_volumes is None and service_networks is None and
+            restart_policy is None and container_name is None and working_dir is None):
+            return {"success": False, "error": "At least one field must be provided for update"}
         
         # Read current compose file
         if not os.path.exists(DOCKER_COMPOSE_PATH):
@@ -560,6 +548,68 @@ async def update_service(service_name: str, request: dict):
             else:
                 # Remove environment if empty dict provided
                 service_config.pop('environment', None)
+        
+        # Update volumes if provided
+        if service_volumes is not None and isinstance(service_volumes, list):
+            if service_volumes:
+                volumes_list = []
+                for volume in service_volumes:
+                    if isinstance(volume, dict):
+                        source = volume.get('source', '').strip()
+                        target = volume.get('target', '').strip()
+                        volume_type = volume.get('type', 'bind')
+                        
+                        if source and target:
+                            if volume_type == 'bind':
+                                volume_str = f"{source}:{target}"
+                            else:
+                                volume_str = f"{source}:{target}"
+                            
+                            # Add read-only flag if specified
+                            if volume.get('read_only', False):
+                                volume_str += ":ro"
+                            
+                            volumes_list.append(volume_str)
+                service_config['volumes'] = volumes_list
+            else:
+                # Remove volumes if empty list provided
+                service_config.pop('volumes', None)
+        
+        # Update networks if provided
+        if service_networks is not None and isinstance(service_networks, list):
+            if service_networks:
+                networks_dict = {}
+                for network in service_networks:
+                    if isinstance(network, dict):
+                        network_name = network.get('name', '').strip()
+                        if network_name:
+                            network_config = {}
+                            if network.get('mode') == 'external':
+                                network_config['external'] = True
+                            networks_dict[network_name] = network_config if network_config else None
+                service_config['networks'] = networks_dict
+            else:
+                # Remove networks if empty list provided
+                service_config.pop('networks', None)
+        
+        # Update additional options if provided
+        if restart_policy is not None:
+            if restart_policy.strip():
+                service_config['restart'] = restart_policy.strip()
+            else:
+                service_config.pop('restart', None)
+        
+        if container_name is not None:
+            if container_name.strip():
+                service_config['container_name'] = container_name.strip()
+            else:
+                service_config.pop('container_name', None)
+        
+        if working_dir is not None:
+            if working_dir.strip():
+                service_config['working_dir'] = working_dir.strip()
+            else:
+                service_config.pop('working_dir', None)
         
         # Write back to file
         with open(DOCKER_COMPOSE_PATH, 'w') as f:

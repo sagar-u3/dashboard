@@ -505,6 +505,47 @@ function removeEnvEntry(button) {
     entry.remove();
 }
 
+function addVolumeEntry() {
+    const container = document.getElementById('volumes-container');
+    const entry = document.createElement('div');
+    entry.className = 'volume-entry';
+    entry.innerHTML = `
+        <input type="text" class="volume-source" placeholder="Source (e.g., ./data or /host/path)" />
+        <input type="text" class="volume-target" placeholder="Target (e.g., /container/path)" />
+        <select class="volume-type">
+            <option value="bind">Bind Mount</option>
+            <option value="volume">Named Volume</option>
+        </select>
+        <button type="button" onclick="removeVolumeEntry(this)" class="btn btn-danger btn-sm">×</button>
+    `;
+    container.appendChild(entry);
+}
+
+function removeVolumeEntry(button) {
+    const entry = button.parentElement;
+    entry.remove();
+}
+
+function addNetworkEntry() {
+    const container = document.getElementById('networks-container');
+    const entry = document.createElement('div');
+    entry.className = 'network-entry';
+    entry.innerHTML = `
+        <input type="text" class="network-name" placeholder="Network Name (e.g., my-network)" />
+        <select class="network-mode">
+            <option value="service">Service Network</option>
+            <option value="external">External Network</option>
+        </select>
+        <button type="button" onclick="removeNetworkEntry(this)" class="btn btn-danger btn-sm">×</button>
+    `;
+    container.appendChild(entry);
+}
+
+function removeNetworkEntry(button) {
+    const entry = button.parentElement;
+    entry.remove();
+}
+
 function getBuildFromForm() {
     const context = document.getElementById('build-context').value.trim();
     const dockerfile = document.getElementById('build-dockerfile').value.trim();
@@ -570,6 +611,46 @@ function getEnvFromForm() {
     });
     
     return env;
+}
+
+function getVolumesFromForm() {
+    const volumeEntries = document.querySelectorAll('.volume-entry');
+    const volumes = [];
+    
+    volumeEntries.forEach(entry => {
+        const source = entry.querySelector('.volume-source').value.trim();
+        const target = entry.querySelector('.volume-target').value.trim();
+        const type = entry.querySelector('.volume-type').value;
+        
+        if (source && target) {
+            volumes.push({
+                source: source,
+                target: target,
+                type: type
+            });
+        }
+    });
+    
+    return volumes;
+}
+
+function getNetworksFromForm() {
+    const networkEntries = document.querySelectorAll('.network-entry');
+    const networks = [];
+    
+    networkEntries.forEach(entry => {
+        const name = entry.querySelector('.network-name').value.trim();
+        const mode = entry.querySelector('.network-mode').value;
+        
+        if (name) {
+            networks.push({
+                name: name,
+                mode: mode
+            });
+        }
+    });
+    
+    return networks;
 }
 
 function setPortsInForm(ports) {
@@ -641,6 +722,55 @@ function setEnvInForm(env) {
     }
 }
 
+function setVolumesInForm(volumes) {
+    const container = document.getElementById('volumes-container');
+    container.innerHTML = '';
+    
+    if (volumes && volumes.length > 0) {
+        volumes.forEach(volume => {
+            const entry = document.createElement('div');
+            entry.className = 'volume-entry';
+            entry.innerHTML = `
+                <input type="text" class="volume-source" placeholder="Source (e.g., ./data or /host/path)" value="${volume.source || ''}" />
+                <input type="text" class="volume-target" placeholder="Target (e.g., /container/path)" value="${volume.target || ''}" />
+                <select class="volume-type">
+                    <option value="bind" ${volume.type === 'bind' ? 'selected' : ''}>Bind Mount</option>
+                    <option value="volume" ${volume.type === 'volume' ? 'selected' : ''}>Named Volume</option>
+                </select>
+                <button type="button" onclick="removeVolumeEntry(this)" class="btn btn-danger btn-sm">×</button>
+            `;
+            container.appendChild(entry);
+        });
+    } else {
+        // Add one empty entry
+        addVolumeEntry();
+    }
+}
+
+function setNetworksInForm(networks) {
+    const container = document.getElementById('networks-container');
+    container.innerHTML = '';
+    
+    if (networks && networks.length > 0) {
+        networks.forEach(network => {
+            const entry = document.createElement('div');
+            entry.className = 'network-entry';
+            entry.innerHTML = `
+                <input type="text" class="network-name" placeholder="Network Name (e.g., my-network)" value="${network.name || ''}" />
+                <select class="network-mode">
+                    <option value="service" ${network.mode === 'service' ? 'selected' : ''}>Service Network</option>
+                    <option value="external" ${network.mode === 'external' ? 'selected' : ''}>External Network</option>
+                </select>
+                <button type="button" onclick="removeNetworkEntry(this)" class="btn btn-danger btn-sm">×</button>
+            `;
+            container.appendChild(entry);
+        });
+    } else {
+        // Add one empty entry
+        addNetworkEntry();
+    }
+}
+
 function toggleAddServiceForm() {
     const form = document.getElementById('add-service-form');
     if (form.style.display === 'none') {
@@ -661,7 +791,13 @@ function resetFormToAddMode() {
     // Initialize with empty entries
     setPortsInForm([]);
     setEnvInForm({});
+    setVolumesInForm([]);
+    setNetworksInForm([]);
     setBuildInForm(null);
+    // Reset additional options
+    document.getElementById('restart-policy').value = '';
+    document.getElementById('container-name').value = '';
+    document.getElementById('working-dir').value = '';
 }
 
 function clearServiceForm() {
@@ -669,7 +805,13 @@ function clearServiceForm() {
     document.getElementById('service-image').value = '';
     setPortsInForm([]);
     setEnvInForm({});
+    setVolumesInForm([]);
+    setNetworksInForm([]);
     setBuildInForm(null);
+    // Clear additional options
+    document.getElementById('restart-policy').value = '';
+    document.getElementById('container-name').value = '';
+    document.getElementById('working-dir').value = '';
 }
 
 async function editService(serviceName) {
@@ -690,9 +832,16 @@ async function editService(serviceName) {
         document.getElementById('service-image').value = data.image || '';
         setBuildInForm(data.build || null);
         
-        // Set ports and environment using the new helper functions
+        // Set ports, environment, volumes, networks, and additional options using the helper functions
         setPortsInForm(data.ports || []);
         setEnvInForm(data.environment || {});
+        setVolumesInForm(data.volumes || []);
+        setNetworksInForm(data.networks || []);
+        
+        // Set additional options
+        document.getElementById('restart-policy').value = data.restart || '';
+        document.getElementById('container-name').value = data.container_name || '';
+        document.getElementById('working-dir').value = data.working_dir || '';
         
         currentEditingService = serviceName;
         
@@ -735,6 +884,11 @@ async function saveService() {
     const serviceBuild = getBuildFromForm();
     const servicePorts = getPortsFromForm();
     const serviceEnv = getEnvFromForm();
+    const serviceVolumes = getVolumesFromForm();
+    const serviceNetworks = getNetworksFromForm();
+    const restartPolicy = document.getElementById('restart-policy').value.trim();
+    const containerName = document.getElementById('container-name').value.trim();
+    const workingDir = document.getElementById('working-dir').value.trim();
     
     if (!serviceName || (!serviceImage && !serviceBuild)) {
         alert('Service name and either image or build context are required');
@@ -757,13 +911,24 @@ async function saveService() {
         const payload = {
             name: serviceName,
             ports: servicePorts,
-            environment: serviceEnv
+            environment: serviceEnv,
+            volumes: serviceVolumes,
+            networks: serviceNetworks
         };
         if (serviceImage) {
             payload.image = serviceImage;
         }
         if (serviceBuild) {
             payload.build = serviceBuild;
+        }
+        if (restartPolicy) {
+            payload.restart = restartPolicy;
+        }
+        if (containerName) {
+            payload.container_name = containerName;
+        }
+        if (workingDir) {
+            payload.working_dir = workingDir;
         }
 
         const response = await fetch(url, {
@@ -790,20 +955,93 @@ async function saveService() {
     }
 }
 
-// Initialize application
-document.addEventListener('DOMContentLoaded', function() {
-    // Auto-focus on terminal input
-    const terminalInput = document.getElementById('terminal-input');
-    if (terminalInput) {
-        terminalInput.focus();
+// Gateway Services Functions
+async function loadGatewayServices() {
+    try {
+        const response = await fetch('/api/gateway/services');
+        const data = await response.json();
+        
+        if (data.error) {
+            console.error('Error loading gateway services:', data.error);
+            document.getElementById('gateway-services').innerHTML = 
+                '<div class="service-error">Error loading services: ' + data.error + '</div>';
+            return;
+        }
+        
+        renderGatewayServices(data.services);
+        
+    } catch (error) {
+        console.error('Error loading gateway services:', error);
+        document.getElementById('gateway-services').innerHTML = 
+            '<div class="service-error">Error loading services: ' + error.message + '</div>';
+    }
+}
+
+function renderGatewayServices(services) {
+    const container = document.getElementById('gateway-services');
+    
+    if (!services || services.length === 0) {
+        container.innerHTML = '<div class="no-services">No services found</div>';
+        return;
     }
     
-    // Show default section
-    showSection('command-section');
+    let html = '<div class="services-grid">';
     
-    // Set default terminal mode
-    switchMode('single');
+    services.forEach(service => {
+        const statusClass = service.name === 'dashboard' ? 'status-running' : 'status-unknown';
+        const baseUrl = window.location.origin;
+        
+        html += `
+            <div class="gateway-service-card">
+                <div class="service-header">
+                    <h3>${service.name}</h3>
+                    <span class="service-status ${statusClass}">${service.name === 'dashboard' ? 'Running' : 'Unknown'}</span>
+                </div>
+                <div class="service-info">
+                    <p><strong>Description:</strong> ${service.description}</p>
+                    <p><strong>Path:</strong> <a href="${service.path}" target="_blank">${baseUrl}${service.path}</a></p>
+                    ${service.image ? `<p><strong>Image:</strong> ${service.image}</p>` : ''}
+                    ${service.build ? `<p><strong>Build:</strong> ${typeof service.build === 'object' ? service.build.context : service.build}</p>` : ''}
+                </div>
+                <div class="service-actions">
+                    <button onclick="window.open('${service.path}', '_blank')" class="btn btn-primary btn-sm">Open Service</button>
+                    ${service.name !== 'dashboard' && service.name !== 'web-server' ? 
+                        `<button onclick="testServiceConnection('${service.name}', '${service.path}')" class="btn btn-secondary btn-sm">Test Connection</button>` : ''}
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+async function testServiceConnection(serviceName, path) {
+    try {
+        const response = await fetch(path);
+        if (response.ok) {
+            alert(`${serviceName} is responding correctly!`);
+        } else {
+            alert(`${serviceName} returned status ${response.status}`);
+        }
+    } catch (error) {
+        alert(`Cannot reach ${serviceName}: ${error.message}`);
+    }
+}
+
+function refreshGatewayServices() {
+    document.getElementById('gateway-services').innerHTML = '<div class="service-loading">Refreshing services...</div>';
+    loadGatewayServices();
+}
+
+// Initialize application
+document.addEventListener('DOMContentLoaded', function() {
+    // Show Docker section by default
+    showSection('docker-section');
     
     // Auto-load Docker Compose from environment
     loadDockerCompose();
+    
+    // Load gateway services
+    loadGatewayServices();
 });
