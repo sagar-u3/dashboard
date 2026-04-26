@@ -21,14 +21,14 @@ jobs:
       - name: Install dependencies
         run: |
           # Use existing virtual environment in 'env' directory
-          source env/bin/activate
+          source /home/sagar/Projects/env/bin/activate
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r /home/sagar/Projects/requirements.txt
 
       - name: Restart Application
         run: |
           # Stop existing process if running
           pkill -f "python.*main.py" || true
           # Start the application in the background using existing virtual environment
-          source env/bin/activate
-          nohup python main.py > app.log 2>&1 &
+          source /home/sagar/Projects/env/bin/activate
+          nohup python /home/sagar/Projects/main.py > app.log 2>&1 &

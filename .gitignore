@@ -57,3 +57,6 @@ out/
 debug.py
 
 actions-runner
+_actions
+_tool
+_PipelineMapping
